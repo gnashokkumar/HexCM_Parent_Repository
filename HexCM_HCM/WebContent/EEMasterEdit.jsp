@@ -10,7 +10,7 @@
 <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 <title>EE Master Entry</title>
 </head>
-<body>
+<body onload="fieldProperties()">
 <form action="insertEmployeeRecord" method="post">
 <label for="emp_ab_num">Employee Number </label>  <input type="text" id="emp_ab_num" name="emp_ab_num"> </br>
 <label for="emp_alpha_name">Alpha Name </label>  <input type=text id=emp_alpha_name name=emp_alpha_name> </br>
@@ -21,7 +21,7 @@
 <!-- All the search buttons in this form pass 3 parameters to the onclick javascript function. 
 1. Connection keyword between jsp and servlet so that query returns the right user defined code.
 2. Heading text of modal
-3. Has the element id of the input field where value is returned to the respective input field.  -->
+3. Element id of the input field where value is returned to the respective input field.  -->
 
 <input type="button" class="button" id = "get_home_company" name="get_home_company" value = "Search" onclick="callModal('company_codes','Company Codes','emp_home_company')"> </br>
 
@@ -269,6 +269,68 @@ function fetchDataAndDisplay(codeType) {
             
             modal.style.display = "none"
         } 
+ 
+ // Four functions below to get column properties from servlet after querying them from table 
+ // and also they set maxlength attribute to all input fields in this page.
+ 
+ // These 4 are reusable functions and will be used in all HexCM html/jsp pages.
+
+ function fieldProperties() {
+		getInputFields();
+		
+		
+	}
+
+	function getInputFields() {
+		var inputFields, index, whereQueryClause='';
+
+		inputFields = document.getElementsByTagName("input");
+		for (index = 0; index < inputFields.length; ++index) {
+			
+			if(index != inputFields.length - 1) {
+				whereQueryClause += "'" + inputFields[index].getAttribute("id") + "',";
+			} else {
+				whereQueryClause += "'" + inputFields[index].getAttribute("id") + "'";
+			}
+			
+				
+		}
+		console.log(whereQueryClause);
+		ajaxGetinputFieldProperties(whereQueryClause);
+	}
+
+	function ajaxGetinputFieldProperties(whereQueryClause) {
+		var var_GetTabColProperties_ColumnName, var_GetTabColProperties_DataType, var_Field_Max_Length;
+		 $.ajax
+	     ({
+	         url:'GetTableColumnProperties',
+	         data:{ QuerySubString : whereQueryClause }, //whereQueryClause contains all input field IDs from this form.
+	         type:'POST',
+	         cache:false,
+	         success:function(data){
+	        	 	console.log(data);
+	        	 		for( var jsonIndex=0;jsonIndex<data.length;jsonIndex++) {
+	        	 		var_GetTabColProperties_ColumnName = data[jsonIndex].var_GetTabColProperties_ColumnName;
+	        	 		var_GetTabColProperties_DataType = data[jsonIndex].var_GetTabColProperties_DataType;
+	        	 		var_Field_Max_Length = data[jsonIndex].var_Field_Max_Length;
+	        	 		
+	        	 		//Following function inserts max length to all input fields that have identical ids as in table.
+	        	 		insertMaxLengthToInputElements(var_GetTabColProperties_ColumnName, var_GetTabColProperties_DataType, var_Field_Max_Length);
+	        	 		 
+	        		 
+	        		}
+	        	 },
+	         error:function(){alert('Error receiving JSON');}
+	     });
+	}
+
+	 function insertMaxLengthToInputElements(var_GetTabColProperties_ColumnName, var_GetTabColProperties_DataType, var_Field_Max_Length) {
+		
+		//JQuery to create maxlength attribute and set its value passed on by servlet.
+		$("#"+var_GetTabColProperties_ColumnName).attr("maxlength",var_Field_Max_Length);
+		
+		
+	} 
 
 </script>
 
